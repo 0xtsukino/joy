@@ -1,5 +1,5 @@
 ;(function(sr){
-
+console.log("hi we are the SAND BOX");
 sr = {};
 sr.up = function(msg){ window.parent.postMessage(msg, '*'); }  // TODO: AUDIT! THIS LOOKS SCARY, BUT '/' NOT WORK FOR SANDBOX 'null' ORIGIN. IS THERE ANYTHING BETTER?
 

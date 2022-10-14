@@ -1,4 +1,4 @@
-// console.log("worker.js LOGGING: serviceworker v6");
+console.log("worker.js LOGGING: serviceworker v6");
 
 var CACHE = 'CACHEv1';
 
@@ -119,12 +119,14 @@ async function checkCache(event, request) {
 function check2Cache(event) {
   return new Promise(async (resolve) => {
     try {
+      console.log('request', event.request.url);
       var request = event.request,
         cache = caches.match(request), // <-- our cache
         reply = fetch(request); // <-- our network fetch
       
       if (cache = await cache) {
         resolve(cache);
+        // we would have a return here, BUT we want to see if there is an update and WARN users if hash check.
       }
       resolve(reply = await reply);
       
@@ -139,7 +141,9 @@ function check2Cache(event) {
       }
 
       var upgrade = true; // prompt user if want to upgrade
-      console.log("ASK USER TO UPGRADE, WE ARE ASSUMING YES IN THIS ALPHA");
+      console.log("ASK USER TO UPGRADE, WE ARE ASSUMING YES IN THIS ALPHA: CAREFUL SECURITY," +
+          "IF YOU KNOW WHAT YOU ARE DOING, RESET SERVICE WORKER TO UPGRADE, YOU CAN RESET AT chrome://serviceworker-internals/" +
+          " and (I think) find localhost:8769 to reset.");
       if(!upgrade){ return }
 
       putInCache(request, reply.clone());

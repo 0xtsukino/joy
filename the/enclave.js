@@ -13,17 +13,33 @@ TO LEARN MORE ABOUT THESE LIMITATIONS, PLEASE READ SECURERENDER.ORG
 HOW SECURE RENDER WORKS: APP -> [ IFRAME SHIELD -> [SECURE RENDER] <-> USER DATA ]
 AN APP ONLY EVER FEEDS IN VIEW LOGIC. DATA IS NEVER SENT BACK UP! */
 sr = {browser: (window.browser || window.chrome)};
-try{ !sr.browser && navigator.serviceWorker.register('./service.js') }catch(e){};
+console.log("hiiiiii", !sr.browser, window.browser || window.chrome);
+try{ !(sr.browser||'').runtime && navigator.serviceWorker.register('./service.js') }catch(e){ console.log('something weird happened') };
 
-(function start(i){
+(async function start(i){
   // TODO: talk to cloudflare about enforcing integrity meanwhile?
   i = sr.i = document.createElement('iframe');
   i.className = 'SecureRender';
   i.style = "position: fixed; border: 0; width: 100%; height: 100%; top: 0; left: 0; right: 0; bottom: 0;";
   i.sandbox = 'allow-scripts allow-popups allow-downloads allow-pointer-lock';
   i.csp = "script-src 'self'; default-src data: blob: mediastream: filesystem:; style-src 'self' 'unsafe-inline'; child-src 'self' blob:; worker-src blob: 'self';";
-  sr.send = function(msg){ i.contentWindow.postMessage(msg, '*') } // TODO: AUDIT! THIS LOOKS SCARY, BUT '/' NOT WORK FOR SANDBOX 'null' ORIGIN. IS THERE ANYTHING BETTER?
-  i.src = "./sandbox.html";
+  sr.send = function(msg){
+    if(!i.contentWindow){
+      setTimeout(function(){ sr.send(msg) }, 0);
+      return;
+    }
+    i.contentWindow.postMessage(msg, '*');  // TODO: AUDIT! THIS LOOKS SCARY, BUT '/' NOT WORK FOR SANDBOX 'null' ORIGIN. IS THERE ANYTHING BETTER?
+  }
+  sr.sb = await (await fetch('./sandbox.html')).text(); // make this faster for extension?
+  if((sr.browser||'').runtime){
+    console.log("extension");
+    i.src = "./sandbox.html";
+  } else {
+    sr.sbjs = await (await fetch('./sandbox.js')).text(); // make this faster for extension?
+    sr.sb = sr.sb.replace('<script src="./sandbox.js"></script>', "<script>"+sr.sbjs+"</script>");
+    console.log("srcDoc mode", sr.sb);
+    i.srcDoc = sr.sb; // SECURITY NOTE: still need to rewwrite the js tag into js inline.
+  }
   document.body.appendChild(i);
 }());
 
